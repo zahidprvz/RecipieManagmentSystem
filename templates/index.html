@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Recipe Management System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .actions {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            padding: 5px;
+            margin-right: 5px;
+        }
+
+        button {
+            padding: 5px 10px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #output {
+            margin-top: 20px;
+        }
+
+        .recipe {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Recipe Management System</h1>
+        <div class="actions">
+            <button onclick="showAddRecipeForm()">Add Recipe</button>
+            <input type="text" id="searchKeyword" placeholder="Search by keyword">
+            <button onclick="searchRecipes()">Search</button>
+            <input type="text" id="categoryID" placeholder="Category ID">
+            <button onclick="categorizeRecipes()">Categorize</button>
+        </div>
+        <div id="output"></div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("output").innerHTML = "Welcome to the Recipe Management System!";
+        });
+
+        function showAddRecipeForm() {
+            document.getElementById("output").innerHTML = `
+        <h2>Add Recipe</h2>
+        <input type="text" id="recipeName" placeholder="Recipe name">
+        <input type="number" id="categoryID" placeholder="Category ID">
+        <textarea id="recipeIngredients" placeholder="Ingredients"></textarea>
+        <textarea id="recipeInstructions" placeholder="Instructions"></textarea>
+        <input type="number" id="cookingTime" placeholder="Cooking time (in minutes)">
+        <button onclick="addRecipe()">Add</button>
+    `;
+        }
+
+
+        function addRecipe() {
+            const name = document.getElementById("recipeName").value;
+            const categoryIDInput = document.getElementById("categoryID").value;
+            const categoryID = parseInt(categoryIDInput, 10); // Parse the category ID as an integer
+
+            // Check if the parsing was successful, if not, set a default category ID
+            const parsedCategoryID = !isNaN(categoryID) ? categoryID : 1;
+
+            const ingredients = document.getElementById("recipeIngredients").value;
+            const instructions = document.getElementById("recipeInstructions").value;
+            const cookingTime = parseInt(document.getElementById("cookingTime").value, 10);
+
+            const recipeData = {
+                name: name,
+                category_id: parsedCategoryID, // Use the parsed category ID
+                ingredients: ingredients,
+                instructions: instructions,
+                cooking_time: cookingTime
+            };
+
+            fetch('/api/add_recipe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(recipeData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("output").innerHTML = data.message;
+                })
+                .catch(error => {
+                    document.getElementById("output").innerHTML = "An error occurred while adding the recipe.";
+                    console.error('Error:', error);
+                });
+        }
+
+
+        function searchRecipes() {
+            const keyword = document.getElementById("searchKeyword").value;
+
+            fetch(`/api/search_recipes?keyword=${encodeURIComponent(keyword)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        document.getElementById("output").innerHTML = "No recipes found.";
+                    } else {
+                        let outputHTML = "<h2>Search Results</h2>";
+                        data.forEach(recipe => {
+                            outputHTML += `
+                        <div class="recipe">
+                            <p><strong>Name:</strong> ${recipe.name}</p>
+                            <p><strong>Category ID:</strong> ${recipe.category_id}</p>
+                            <p><strong>Cooking Time:</strong> ${recipe.cooking_time} minutes</p>
+                        </div>
+                    `;
+                        });
+                        document.getElementById("output").innerHTML = outputHTML;
+                    }
+                })
+                .catch(error => {
+                    document.getElementById("output").innerHTML = "An error occurred while searching for recipes.";
+                    console.error('Error:', error);
+                });
+        }
+
+        function categorizeRecipes() {
+            const categoryID = document.getElementById("categoryID").value;
+
+            fetch(`/api/categorize_recipes?category_id=${encodeURIComponent(categoryID)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        document.getElementById("output").innerHTML = `No recipes found in Category ID ${categoryID}.`;
+                    } else {
+                        let outputHTML = `<h2>Recipes in Category ID ${categoryID}</h2>`;
+                        data.forEach(recipe => {
+                            outputHTML += `
+                        <div class="recipe">
+                            <p><strong>Name:</strong> ${recipe.name}</p>
+                            <p><strong>Cooking Time:</strong> ${recipe.cooking_time} minutes</p>
+                        </div>
+                    `;
+                        });
+                        document.getElementById("output").innerHTML = outputHTML;
+                    }
+                })
+                .catch(error => {
+                    document.getElementById("output").innerHTML = "An error occurred while categorizing recipes.";
+                    console.error('Error:', error);
+                });
+        }
+
+    </script>
+</body>
+
+</html>
